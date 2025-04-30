@@ -47,30 +47,15 @@ if st.button("Lấy link video"):
                         error_count += 1
                         results.append((url, raw_title, None, link_result.stderr))
 
-            # Hiển thị kết quả
+            # Hiển thị kết quả gọn gàng
             if error_count > 0:
-                for url, title, video_url, error in results:
+                for url, _, _, error in results:
                     if error:
                         st.error(f"❌ Lỗi khi xử lý: {url}")
-                        st.code(error)
             else:
                 st.success(f"✅ Đã lấy link tải cho {len(url_list)} video.")
 
-            # Hiển thị nút tải với màu thay đổi khi đã nhấn
-            for url, title, video_url, error in results:
+            # Hiển thị nút tải
+            for _, title, video_url, error in results:
                 if not error:
-                    btn_key = f"btn_{url}"
-
-                    # Nếu trạng thái chưa được khởi tạo, đặt mặc định là False
-                    if btn_key not in st.session_state:
-                        st.session_state[btn_key] = False
-
-                    # Nếu đã bấm nút trước đó, đổi màu link
-                    if st.session_state[btn_key]:
-                        st.markdown(
-                            f'<a href="{video_url}" style="color: darkred; font-weight: bold; padding: 5px; text-decoration: none;">🔻 Đã tải: {sanitize_filename(title)}.webm</a>',
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        if st.button(f"🔻 Tải video ({sanitize_filename(title)}.webm)", key=btn_key):
-                            st.session_state[btn_key] = True
+                    st.markdown(f"[🔻 Tải video ({sanitize_filename(title)}.webm)]({video_url})", unsafe_allow_html=True)

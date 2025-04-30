@@ -6,7 +6,7 @@ import urllib.parse
 st.set_page_config(page_title="YouTube Direct Links", page_icon="🔗")
 st.title("🔗 Tải trực tiếp YouTube")
 
-urls = st.text_area("📺 Nhập danh sách URL video YouTube (mỗi dòng một URL):", key="url_input")
+urls = st.text_area("📺 Nhập danh sách URL video YouTube (mỗi dòng một URL):")
 
 # Hàm làm sạch tiêu đề để thành tên file hợp lệ
 def sanitize_filename(title):
@@ -19,7 +19,6 @@ if st.button("Lấy link tải"):
         st.warning("⚠️ Vui lòng nhập ít nhất một URL video.")
     else:
         with st.spinner("🔄 Đang xử lý..."):
-            st.session_state['download_links'] = []
             for url in url_list:
                 # Lấy tiêu đề video
                 title_cmd = ["yt-dlp", "--get-title", url]
@@ -40,16 +39,7 @@ if st.button("Lấy link tải"):
                     if link_result.returncode == 0:
                         video_url = link_result.stdout.strip()
                         video_url_with_title = f"{video_url}&title={encoded_title}"
-                        st.session_state['download_links'].append((clean_title, video_url_with_title))
+                        st.markdown(f"[🔻 Tải video ({clean_title}.webm)]({video_url_with_title})", unsafe_allow_html=True)
                     else:
                         st.error(f"❌ Lỗi khi trích xuất link cho: {url}")
                         st.code(link_result.stderr)
-
-        if 'download_links' in st.session_state:
-            for title, url in st.session_state['download_links']:
-                st.markdown(f"[🔻 Tải video ({title}.webm)]({url})", unsafe_allow_html=True)
-
-if st.button("Bắt đầu lại"):
-    st.session_state.pop('download_links', None)
-    st.session_state['url_input'] = ""
-    st.rerun()

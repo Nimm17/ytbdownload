@@ -33,7 +33,7 @@ if st.button("Lấy link video"):
                     encoded_title = urllib.parse.quote(raw_title)
 
                     # Lấy link video nhanh hơn bằng --skip-download
-                    link_cmd = ["yt-dlp", "--cache-dir", "-f", "bestvideo", "-g", "--skip-download", url]
+                    link_cmd = ["yt-dlp", "-g", "--skip-download", "--cache-dir", "-f", "bestvideo", url]
                     link_result = subprocess.run(link_cmd, capture_output=True, text=True)
 
                     if link_result.returncode == 0:

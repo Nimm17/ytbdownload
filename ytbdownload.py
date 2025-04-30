@@ -61,8 +61,12 @@ if st.button("Lấy link video"):
                 if not error:
                     btn_key = f"btn_{url}"
 
-                    # Kiểm tra nếu nút đã nhấn trước đó, đổi màu link
-                    if btn_key in st.session_state:
+                    # Nếu trạng thái chưa được khởi tạo, đặt mặc định là False
+                    if btn_key not in st.session_state:
+                        st.session_state[btn_key] = False
+
+                    # Nếu đã bấm nút trước đó, đổi màu link
+                    if st.session_state[btn_key]:
                         st.markdown(
                             f'<a href="{video_url}" style="color: darkred; font-weight: bold; padding: 5px; text-decoration: none;">🔻 Đã tải: {sanitize_filename(title)}.webm</a>',
                             unsafe_allow_html=True
@@ -70,4 +74,3 @@ if st.button("Lấy link video"):
                     else:
                         if st.button(f"🔻 Tải video ({sanitize_filename(title)}.webm)", key=btn_key):
                             st.session_state[btn_key] = True
-                            st.experimental_rerun()

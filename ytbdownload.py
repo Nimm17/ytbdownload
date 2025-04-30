@@ -56,10 +56,18 @@ if st.button("Lấy link video"):
             else:
                 st.success(f"✅ Đã lấy link tải cho {len(url_list)} video.")
 
-            # Hiển thị nút tải
+            # Hiển thị nút tải với màu thay đổi khi đã nhấn
             for url, title, video_url, error in results:
                 if not error:
                     btn_key = f"btn_{url}"
-                    if st.button(f"🔻 Tải video ({sanitize_filename(title)}.webm)", key=btn_key):
-                        st.write(f"✅ Đã tải: {sanitize_filename(title)}")
-                        st.session_state[btn_key] = True
+
+                    # Kiểm tra nếu nút đã nhấn trước đó, đổi màu link
+                    if btn_key in st.session_state:
+                        st.markdown(
+                            f'<a href="{video_url}" style="color: darkred; font-weight: bold; padding: 5px; text-decoration: none;">🔻 Đã tải: {sanitize_filename(title)}.webm</a>',
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        if st.button(f"🔻 Tải video ({sanitize_filename(title)}.webm)", key=btn_key):
+                            st.session_state[btn_key] = True
+                            st.experimental_rerun()

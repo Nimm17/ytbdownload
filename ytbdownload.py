@@ -2,6 +2,8 @@ import streamlit as st
 import subprocess
 import re
 import urllib.parse
+import shutil
+import concurrent.futures
 from collections import defaultdict
 
 st.set_page_config(page_title="YouTube Direct Links", page_icon="🔗")
@@ -18,50 +20,57 @@ urls = st.text_area("📺 Nhập danh sách URL video YouTube (mỗi dòng một
 def sanitize_filename(title):
     return re.sub(r'[\\/*?:"<>|]', "_", title)
 
-# Xử lý logic chính trong một hàm riêng
+def get_yt_dlp_command():
+    return ["yt-dlp"] if shutil.which("yt-dlp") else ["python", "-m", "yt_dlp"]
+
+# Hàm xử lý từng URL
+def process_single_url(url, yt_dlp_cmd):
+    try:
+        title_result = subprocess.run(
+            yt_dlp_cmd + ["--get-title", url],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        raw_title = title_result.stdout.strip()
+        clean_title = sanitize_filename(raw_title)
+        encoded_title = urllib.parse.quote(raw_title)
+
+        link_result = subprocess.run(
+            yt_dlp_cmd + ["-g", "--skip-download", "-f", "bestvideo[ext=webm]", url],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        video_url = link_result.stdout.strip()
+        video_url_with_title = f"{video_url}&title={encoded_title}"
+
+        return {
+            "original_url": url,
+            "download_url": video_url_with_title,
+            "clean_title": clean_title,
+            "key": f"{url}_{video_url}"
+        }
+
+    except subprocess.CalledProcessError as e:
+        return {
+            "error": f"❌ Lỗi khi xử lý: {url}",
+            "details": e.stderr
+        }
+    except FileNotFoundError:
+        return {
+            "error": f"❌ Không tìm thấy yt-dlp khi xử lý: {url}",
+            "details": "Bạn cần cài yt-dlp bằng pip hoặc thêm vào PATH."
+        }
+
+# Hàm chính xử lý tất cả URL
 def process_urls(url_list):
-    results = []
-    processed_urls = set()
-    
-    for url in url_list:
-        if url in processed_urls:
-            continue
-        processed_urls.add(url)
+    yt_dlp_cmd = get_yt_dlp_command()
+    unique_urls = list(dict.fromkeys(url_list))  # loại bỏ URL trùng
 
-        try:
-            # Lấy tiêu đề video
-            title_result = subprocess.run(
-                ["yt-dlp", "--get-title", url],
-                capture_output=True, 
-                text=True,
-                check=True
-            )
-            raw_title = title_result.stdout.strip()
-            clean_title = sanitize_filename(raw_title)
-            encoded_title = urllib.parse.quote(raw_title)
-
-            # Lấy link tải
-            link_result = subprocess.run(
-                ["yt-dlp", "-g", "--skip-download", "-f", "bestvideo[ext=webm]", url],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            video_url = link_result.stdout.strip()
-            video_url_with_title = f"{video_url}&title={encoded_title}"
-            
-            results.append({
-                "original_url": url,
-                "download_url": video_url_with_title,
-                "clean_title": clean_title,
-                "key": f"{url}_{video_url}"
-            })
-            
-        except subprocess.CalledProcessError as e:
-            results.append({
-                "error": f"❌ Lỗi khi xử lý: {url}",
-                "details": e.stderr
-            })
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(process_single_url, url, yt_dlp_cmd) for url in unique_urls]
+        results = [f.result() for f in concurrent.futures.as_completed(futures)]
     
     return results
 

@@ -26,6 +26,7 @@ def get_yt_dlp_command():
 # Hàm xử lý từng URL
 def process_single_url(url, yt_dlp_cmd):
     try:
+        # Lấy tiêu đề video
         title_result = subprocess.run(
             yt_dlp_cmd + ["--get-title", url],
             capture_output=True,
@@ -36,12 +37,19 @@ def process_single_url(url, yt_dlp_cmd):
         clean_title = sanitize_filename(raw_title)
         encoded_title = urllib.parse.quote(raw_title)
 
+        # Lấy link video tốt nhất kèm audio (file hoàn chỉnh)
+        format_code = "best"
         link_result = subprocess.run(
-            yt_dlp_cmd + ["-g", "--skip-download", "-f", "bestvideo[ext=webm]", url],
+            yt_dlp_cmd + [
+                "-g", "--skip-download",
+                "-f", format_code,
+                url
+            ],
             capture_output=True,
             text=True,
             check=True
         )
+
         video_url = link_result.stdout.strip()
         video_url_with_title = f"{video_url}&title={encoded_title}"
 
